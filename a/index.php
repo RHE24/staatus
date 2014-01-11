@@ -2,6 +2,7 @@
 ob_start();
 session_start();
 require_once('config.php');
+global $con;
 /* Kontrollime, kas on sisselogitud */
 if($_SESSION['logged'] != 1 || !isset($_SESSION['uid'])) { header("Location: login.php"); }
 // 'edit' päringu ümbertöötlemine //
@@ -10,7 +11,6 @@ if(isset($_POST['edit']))
 	if(isset($_POST['pass']) || isset($_POST['email']))
 	{
 		$vead = '';
-		$q = mysql_fetch_assoc(mysql_query('SELECT * FROM `users` WHERE id = '.$_SESSION['uid'].''));
 		if(!empty($_POST['pass']))
 		{
 			$old_pass = mysql_real_escape_string($_POST['old_pass']);
@@ -27,21 +27,34 @@ if(isset($_POST['edit']))
 		}
 		if(empty($vead))
 		{
-			echo "start";
+			$kasutaja_salt = user($_SESSION['uid'], 'salt');
 			if(!empty($_POST['pass']) && !empty($_POST['email']))
 			{
-				echo "0";
-				mysql_query("UPDATE users SET password = '".md5($pass)."', e-mail = '".$email."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				//mysql_query("UPDATE users SET password = '".md5($pass)."', e-mail = '".$email."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				$stmt = $con->prepare('UPDATE users SET password = :password, e-mail = :email WHERE id = :id');
+				$stmt->execute(array(
+					':id'   => $_SESSION['uid'],
+					':password' => hash('sha256', $pass.$kasutaja_salt),
+					':email' => $email
+				));
 			}
 			elseif(!empty($_POST['pass']))
 			{
-				echo "1";
-				mysql_query("UPDATE users SET password = '".md5($pass)."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				//mysql_query("UPDATE users SET password = '".md5($pass)."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				$stmt = $con->prepare('UPDATE users SET password = :password WHERE id = :id');
+				$stmt->execute(array(
+					':id'   => $_SESSION['uid'],
+					':password' => hash('sha256', $pass.$kasutaja_salt)
+				));
 			}
 			elseif(!empty($_POST['email']))
 			{
-				echo "2";
-				mysql_query("UPDATE users SET `e-mail` = '".$email."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				//mysql_query("UPDATE users SET `e-mail` = '".$email."' WHERE id = ".$_SESSION['uid']."") or die (mysql_error());
+				$stmt = $con->prepare('UPDATE users SET e-mail = :email WHERE id = :id');
+				$stmt->execute(array(
+					':id'   => $_SESSION['uid'],
+					':email' => $email
+				));
 			}
 			$_SESSION['logged'] = false;
 			$_SESSION['uid'] = 0;
