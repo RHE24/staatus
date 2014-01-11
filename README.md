@@ -2,4 +2,4 @@ staatus
 =======
 Contributers
 - Martin "Typhome"
-- Jaagup "misterx"
+- Jaagup "Kymps"
