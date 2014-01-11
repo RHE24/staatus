@@ -1,0 +1,139 @@
+<?php
+if($SECRET_IDX_KEY != "IDX") { header("Location: ./index.php"); }
+
+function randomPassword()
+{
+    $alphabet = "abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUWXYZ0123456789";
+    $pass = array(); //remember to declare $pass as an array
+    $alphaLength = strlen($alphabet) - 1; //put the length -1 in cache
+    for ($i = 0; $i < 8; $i++) {
+        $n = rand(0, $alphaLength);
+        $pass[] = $alphabet[$n];
+    }
+    return implode($pass); //turn the array into a string
+}
+
+if(isset($_POST['register']))
+{
+	// Getting data
+	$IP = $_SERVER['REMOTE_ADDR'];
+	$user = mysql_real_escape_string($_POST['kasutaja']);
+	$email = mysql_real_escape_string($_POST['email']);
+	$email2 = mysql_real_escape_string($_POST['email2']);
+	$geneeritud_parool = mysql_real_escape_string(randomPassword());
+	// Checking data
+	$deny_user_array = array('admin', 'adminn', 'administrator', 'administraator', 'mode', 'moderator', 'moderaator', 'moder', 'reklaamjuht', 'tegevusjuht', 'demo', 'test', 'pede', 'munn', 'lits');
+	// Getting data from mySQL
+	$user_exists = mysql_query('SELECT * FROM `users` WHERE `username` = "'.$user.'"');
+	$email_exists = mysql_query('SELECT * FROM `users` WHERE `e-mail` = "'.$email.'"');
+	
+	require_once('recaptchalib.php');
+    $privatekey = "6LedH98SAAAAAOKijuDWQ2rPuAOMRT4A4AzyusAH";
+    $resp = recaptcha_check_answer($privatekey,
+        $_SERVER["REMOTE_ADDR"],
+        $_POST["recaptcha_challenge_field"],
+        $_POST["recaptcha_response_field"]);
+	
+	// Error count
+	$errors = array();
+	if(in_array($user, $deny_user_array)){ $errors[] = 'See kasutajanimi on keelatud!'; }
+	if(!preg_match('/([a-zA-Z0-9_.-]+)@([a-zA-Z0-9-]+).([a-zA-Z0-9-.]+)/', $email)){ $errors[] = 'E-mail aadress peab õige olema!'; }
+	
+	if($email != $email2) { $errors[] = 'Emaili aadressid ei kattu!'; }
+	if(strlen($user) < 1){ $errors[] = 'Kasutajanimi sisestamata!';}
+
+	if(mysql_num_rows($user_exists) > 0) { $errors[] = 'Selline kasutaja juba eksisteerib!'; }
+	if(mysql_num_rows($email_exists) > 0) { $errors[] = 'Selline email juba eksisteerib!'; }
+	
+	if(!$resp->is_valid) { $errors[] = 'Turvakood ei ole õigesti sisestatud!'; }
+	
+	$filter_email = filter_var($email, FILTER_VALIDATE_EMAIL);
+	if($filter_email == false) { $errors[] = 'Selline email aadress ei sobi!'; }
+
+	if (count($errors) > 0)
+	{
+		echo '<div id="content"><div id="content-head">Vead</div><div id="content-box">';
+		foreach($errors as $error){ echo $error.'<br />'; }
+		echo '</div></div><br />';
+	}
+	else
+	{
+		mysql_query('INSERT INTO `users` (`username`, `e-mail`, `password`, `IP`, `joindate`) VALUES ("'.$user.'", "'.$email.'", "'.md5($geneeritud_parool).'", "'.$IP.'", "'.date("U").'")') or die(mysql_error());
+		//MEIL
+		/*$to = $email;
+
+		$subject = 'Konto on loodud (mcs.staatus.eu)';
+
+		$headers = "From: " . strip_tags("no-reply@mcs.staatus.eu") . "\r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+		
+		$message = '<html><body>';
+		$message .= '<table rules="all" style="border-color: #666;" cellpadding="10">';
+		$message .= "<tr style='background: #eee;'><td><strong>Kasutaja:</strong> </td><td>" . strip_tags($_POST['kasutaja']) . "</td></tr>";
+		$message .= "<tr><td><strong>Parool:</strong> </td><td>" . strip_tags($geneeritud_parool) . "</td></tr>";
+		$message .= "</table><br>Täname, et registreerusite meie lehel!";
+		$message .= "</body></html>";
+		
+		mail($to, $subject, $message, $headers);*/
+		require 'class.phpmailer.php';
+		$mail = new PHPMailer;
+		$mail->isSMTP();                                      // Set mailer to use SMTP
+		$mail->Host = 'ec2-54-229-98-112.eu-west-1.compute.amazonaws.com';  // Specify main and backup server
+		$mail->SMTPAuth = true;                               // Enable SMTP authentication
+		$mail->Username = 'no-reply@mcs.staatus.eu';                            // SMTP username
+		$mail->Password = 'p4r00l';                           // SMTP password
+		$mail->SMTPSecure = 'tls';                            // Enable encryption, 'ssl' also accepted
+		$mail->From = 'no-reply@mcs.staatus.eu';
+		$mail->FromName = 'MCS.STAATUS.EU';
+		$mail->addAddress($email);
+		$mail->WordWrap = 50;
+		$mail->Subject = 'Konto on loodud (mcs.staatus.eu)';
+		$mail->Body    = 'Kasutaja: '.strip_tags($_POST['kasutaja']).' | Parool: '.strip_tags($geneeritud_parool).' | Täname, et registreerusite meie lehel!';
+		if(!$mail->send()) {
+		   echo 'Süsteemi viga: Meili saatmisel tekkis veatõrge. Palun kontakteeru martin@prica.eu (meili teel).';
+		   //echo 'Mailer Error: ' . $mail->ErrorInfo;
+		   //exit;
+		}
+		//MEIL
+		echo '<meta http-equiv="refresh" content="2;url=./"><div id="content"><div id="content-head">Teade</div><div id="content-box">';
+		echo 'Kasutaja on loodud!<br /> Palun oota. Sind suunatakse automaatselt lehele.<br /> Kas automaatne suunamine ei t&#246;&#246;ta? <a href="./" style="color: black;">Vajuta siia</a>.';
+		echo '</div></div><br />';
+	}
+}
+?>
+        <div id="content">
+			<div id="content-head">Registreerumine</div>
+			<div id="content-box">
+				<form action="" method="post">
+					<table style="font-size: 13px;">
+						<tr>
+							<td>Kasutaja</td>
+							<td><input type="text" size="32" maxlength="32" name="kasutaja" /></td>
+						</tr>
+						<tr>
+							<td>E-mail</td>
+							<td><input type="text" size="32" maxlength="128" name="email" value="" /></td>
+						</tr>
+						<tr>
+							<td>Korda e-maili</td>
+							<td><input type="text" size="32" maxlength="128" name="email2" value="" /></td>
+						</tr>
+						<tr>
+							<td>Turvakood</td>
+							<td>
+								<?php
+								require_once('recaptchalib.php');
+								$publickey = "6LedH98SAAAAADT2dIbo5kvXfnjFzXb4LgHsO6GH";
+								echo recaptcha_get_html($publickey);
+								?>
+							</td>
+						</tr>
+						<tr>
+							<td style="text-align: center;" colspan="2"><input type="submit" class="button" value="Registreeru" name="register" style="font-size: 13px;" /></td>
+						</tr>
+					</table>
+				</form>
+				Pärast registreerumist saadetakse geneeritud parool meili teel.
+			</div>
+		</div>
