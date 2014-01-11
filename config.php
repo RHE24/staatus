@@ -21,7 +21,7 @@ Andmebaasi prefiks:
 */
 
 try {
-    global $con = new PDO('mysql:host='.$andmebaas['host'].';dbname='.$andmebaas['database'].'', $andmebaas['user'], $andmebaas['password']);
+    $con = new PDO('mysql:host='.$andmebaas['host'].';dbname='.$andmebaas['database'].'', $andmebaas['user'], $andmebaas['password']);
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     echo 'TÕRGE: ' . $e->getMessage();
