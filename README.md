@@ -1,5 +1,5 @@
 staatus
 =======
 Contributers
-- Martin "Typhome"
+- Martin "Typhome" Vooremäe
 - Jaagup "Kymps"
