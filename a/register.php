@@ -20,13 +20,16 @@ function randomPassword()
 // 'register' päringu ümbertöötlemine
 if(isset($_POST['register']))
 {
-	require 'config.php';
+	require('config.php');
+	global $con;
+	
 	// Getting data
 	$IP = $_SERVER['REMOTE_ADDR'];
 	$user = mysql_real_escape_string($_POST['kasutaja']);
 	$email = mysql_real_escape_string($_POST['email']);
 	$email2 = mysql_real_escape_string($_POST['email2']);
 	$geneeritud_parool = mysql_real_escape_string(randomPassword());
+	$salt = uniqid(mt_rand(), true);
 	// Checking data
 	$deny_user_array = array('admin', 'adminn', 'administrator', 'administraator', 'mode', 'moderator', 'moderaator', 'moder', 'reklaamjuht', 'tegevusjuht', 'demo', 'test', 'pede', 'munn', 'lits');
 	// Getting data from mySQL
@@ -64,7 +67,16 @@ if(isset($_POST['register']))
 	}
 	else
 	{
-		mysql_query('INSERT INTO `users` (`username`, `e-mail`, `password`, `IP`, `joindate`) VALUES ("'.$user.'", "'.$email.'", "'.md5($geneeritud_parool).'", "'.$IP.'", "'.date("U").'")') or die(mysql_error());
+		$stmt = $pdo->prepare('INSERT INTO someTable (username, e-mail, password, salt, IP, joindate) VALUES(:username, :email, :password, :salt, :IP, :joindate)');
+		$stmt->execute(array(
+			':username' => $user,
+			':email' => $email,
+			':password' => hash('sha256', $geneeritud_parool.$salt);,
+			':salt' => $salt,
+			':IP' => $IP,
+			':joindate' => date("U")
+		));
+		
 		//MEIL
 		require 'class.phpmailer.php';
 		$mail = new PHPMailer;
@@ -82,10 +94,9 @@ if(isset($_POST['register']))
 		$mail->Body    = 'Kasutaja: '.strip_tags($_POST['kasutaja']).' | Parool: '.strip_tags($geneeritud_parool).' | Täname, et registreerusite meie lehel!';
 		if(!$mail->send()) {
 		   echo 'Süsteemi viga: Meili saatmisel tekkis veatõrge. Palun kontakteeru martin@prica.eu (meili teel).';
-		   //echo 'Mailer Error: ' . $mail->ErrorInfo;
-		   //exit;
 		}
 		//MEIL
+		
 		echo '<meta http-equiv="refresh" content="2;url=./"><div id="content"><div id="content-head">Teade</div><div id="content-box">';
 		echo 'Kasutaja on loodud!<br /> Palun oota. Sind suunatakse automaatselt lehele.<br /> Kas automaatne suunamine ei t&#246;&#246;ta? <a href="./" style="color: black;">Vajuta siia</a>.';
 		echo '</div></div><br />';

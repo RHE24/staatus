@@ -47,8 +47,9 @@ if(isset($_POST['login']))
 	$password = mysql_real_escape_string($_POST['parool']);
 	$q = mysql_fetch_assoc(mysql_query('SELECT * FROM `users` WHERE `username` = "'.$user.'" OR `e-mail` = "'.$user.'"'));
 	$vead = '';
+	$password_check = hash('sha256', $password.$q['salt']);
 	if(empty($_POST['kasutaja'])){ $vead.= 'Kasutaja on sisestamata!<br />'; }
-	if(md5($password) != $q['password']) { $vead.= 'Parool on vale!<br />'; }
+	if($password_check != $q['password']) { $vead.= 'Parool on vale!<br />'; }
 	if(empty($vead)){
 		$UNIX = date("U");
 		$_SESSION['logged'] = true;
@@ -57,7 +58,7 @@ if(isset($_POST['login']))
 		$generate_cookie = base64_encode($user_id.generatePassword(rand(75, 100), 15).$user_id);
 		$_SESSION['ses'] = $generate_cookie;
 		
-		$stmt = $pdo->prepare('UPDATE users SET lastlogin = :unix, session = :generate_cookie WHERE id = :id');
+		$stmt = $con->prepare('UPDATE users SET lastlogin = :unix, session = :generate_cookie WHERE id = :id');
 		$stmt->execute(array(
 			':id'   => $user_id,
 			':lastlogin' => $UNIX,
