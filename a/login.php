@@ -1,7 +1,10 @@
 <?php
 ob_start();
 session_start();
+/* Kontrollime, kas on sisselogitud */
 if($_SESSION['logged'] == 1) { header("Location: index.php"); }
+
+/* generatePassword funktsioon */
 function generatePassword($length=9, $strength=0) {
 	$vowels = 'aeuy';
 	$consonants = 'bdghjmnpqrstvz';
@@ -31,9 +34,14 @@ function generatePassword($length=9, $strength=0) {
 	}
 	return $password;
 }
+
+/* 'login' päring POST meetodi abil */
 if(isset($_POST['login']))
 {
-	require 'config.php';
+	/* Nõuame selle konfiguratsiooni sisu */
+	require_once('config.php');
+	global $con;
+	
 	$IP = $_SERVER['REMOTE_ADDR'];
 	$user = mysql_real_escape_string($_POST['kasutaja']);
 	$password = mysql_real_escape_string($_POST['parool']);
@@ -48,12 +56,19 @@ if(isset($_POST['login']))
 		$_SESSION['uid'] = $user_id;
 		$generate_cookie = base64_encode($user_id.generatePassword(rand(75, 100), 15).$user_id);
 		$_SESSION['ses'] = $generate_cookie;
-		$q = mysql_query('SELECT * FROM users WHERE id = "'.$_SESSION['uid'].'"') or die(mysql_error());
-		mysql_query("UPDATE users SET lastlogin = '".$UNIX."', session = '".$generate_cookie."' WHERE id = '".$user_id."'") or die (mysql_error());
-		//mysql_query('INSERT INTO `sms_logins` (`user_id`, `date`, `IP`) VALUES ("'.$user_id.'", "'.$UNIX.'", "'.$IP.'")') or die(mysql_error());
+		
+		$stmt = $pdo->prepare('UPDATE users SET lastlogin = :unix, session = :generate_cookie WHERE id = :id');
+		$stmt->execute(array(
+			':id'   => $user_id,
+			':lastlogin' => $UNIX,
+			':generate_cookie' => $generate_cookie
+		));
+		
 		header('Location: index.php');
 		echo '<meta http-equiv="refresh" content="0;url=index.php">';
-	}else{
+	}
+	else
+	{
 		echo '<div id="content"><div id="content-head">Vead</div><div id="content-box">'.$vead.'</div></div><br>';
 	}
 }

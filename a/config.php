@@ -1,4 +1,6 @@
 <?php
+/* Nõuame üldise konfiguratsiooni sisu */
+require_once('../config.php');
 
 $CONFIG_DB['error_report'] = 0;
 

@@ -2,6 +2,7 @@
 ob_start();
 session_start();
 require_once('config.php');
+/* Kontrollime, kas on sisselogitud */
 if($_SESSION['logged'] != 1 || !isset($_SESSION['uid'])) { header("Location: login.php"); }
 // 'edit' päringu ümbertöötlemine //
 if(isset($_POST['edit']))
