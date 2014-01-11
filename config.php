@@ -12,9 +12,11 @@ $andmebaas['password'] = "";
 
 /*
 Andmebaasi prefiks:
-* a_
 * mcs_
 * s_
+
+ilma prefiksita:
+* users
 
 # $con->prepare('SELECT * FROM '.[prefiks].' WHERE id = :id');
 
@@ -27,6 +29,6 @@ try {
     echo 'TÕRGE: ' . $e->getMessage();
 }
 
-unset($andmebaas['password']);
+//unset($andmebaas['password']);
 
 ?>
