@@ -85,14 +85,14 @@ $SECRET_IDX_KEY = ("IDX");
             default:
                 if(empty($_GET['page']))
                 {
-                    include './servers.php';
+                    include './pages/servers.php';
                 }
                 else
                 {
-                    $pag = explode('/', $_GET['page']);
-                    if(file_exists('./'.end($pag).'.php') == true)
+                    $pag = explode('/pages/', $_GET['page']);
+                    if(file_exists('./pages/'.end($pag).'.php') == true)
                     {
-                        include './'.end($pag).'.php';
+                        include './pages/'.end($pag).'.php';
                     }
                     else
                     {
@@ -104,7 +104,7 @@ $SECRET_IDX_KEY = ("IDX");
                 }
             break;
 			case 'index':
-				include 'servers.php';
+				include './pages/servers.php';
 			break;
             case 'logout':
                 //include 'logoff.php';
