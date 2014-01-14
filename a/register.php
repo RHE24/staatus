@@ -32,9 +32,17 @@ if(isset($_POST['register']))
 	$salt = uniqid(mt_rand(), true);
 	// Checking data
 	$deny_user_array = array('admin', 'adminn', 'administrator', 'administraator', 'mode', 'moderator', 'moderaator', 'moder', 'reklaamjuht', 'tegevusjuht', 'demo', 'test', 'pede', 'munn', 'lits');
+	
 	// Getting data from mySQL
-	$user_exists = mysql_query('SELECT * FROM `users` WHERE `username` = "'.$user.'"');
-	$email_exists = mysql_query('SELECT * FROM `users` WHERE `e-mail` = "'.$email.'"');
+	$stmt = $con->prepare('SELECT * FROM `users` WHERE `username` = :user');
+	$stmt->execute(array('user' => $user));
+	$result = $stmt->fetchAll();
+	$user_exists = $result;
+	
+	$stmt = $con->prepare('SELECT * FROM `users` WHERE `e-mail` = :email');
+	$stmt->execute(array('email' => $email));
+	$result = $stmt->fetchAll();
+	$email_exists = $result;
 	
 	require_once('recaptchalib.php');
     $privatekey = "6LedH98SAAAAAOKijuDWQ2rPuAOMRT4A4AzyusAH";
@@ -51,8 +59,8 @@ if(isset($_POST['register']))
 	if($email != $email2) { $errors[] = 'Emaili aadressid ei kattu!'; }
 	if(strlen($user) < 1){ $errors[] = 'Kasutajanimi sisestamata!';}
 
-	if(mysql_num_rows($user_exists) > 0) { $errors[] = 'Selline kasutaja juba eksisteerib!'; }
-	if(mysql_num_rows($email_exists) > 0) { $errors[] = 'Selline email juba eksisteerib!'; }
+	if(count($user_exists)) { $errors[] = 'Selline kasutaja juba eksisteerib!'; }
+	if(count($email_exists)) { $errors[] = 'Selline email juba eksisteerib!'; }
 	
 	if(!$resp->is_valid) { $errors[] = 'Turvakood ei ole õigesti sisestatud!'; }
 	
